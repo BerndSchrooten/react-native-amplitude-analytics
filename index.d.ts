@@ -1,5 +1,11 @@
+interface AmplitudeOptions {
+  trackSessionEvents?: boolean;
+  eventPrefix?: boolean;
+}
+
 export default class Amplitude {
-  constructor(apiKey: string, trackSessionEvents?: boolean, eventPrefix?: string);
+  static initInstance(apiKey: string, options?: AmplitudeOptions): Promise<Amplitude>;
+  constructor(apiKey: string, trackSessionEvents?: boolean, eventPrefix?: string, onCreate?: (instance: Amplitude) => void);
 
   // --------------------------------------------------
   // Identify

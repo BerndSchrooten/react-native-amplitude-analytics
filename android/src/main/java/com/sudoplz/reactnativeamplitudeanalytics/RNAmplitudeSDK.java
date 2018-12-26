@@ -1,5 +1,6 @@
 package com.sudoplz.reactnativeamplitudeanalytics;
 
+import android.util.Log;
 import com.amplitude.api.Amplitude;
 import com.amplitude.api.Identify;
 
@@ -41,9 +42,10 @@ public class RNAmplitudeSDK extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void initialize(String apiKey, Boolean trackSessionEvents) {
+  public void initialize(String apiKey, Boolean trackSessionEvents, Promise promise) {
     Amplitude.getInstance().initialize(getReactApplicationContext(), apiKey).enableForegroundTracking(this.mApplication);
     Amplitude.getInstance().trackSessionEvents(trackSessionEvents);
+    promise.resolve(null);
   }
 
   @ReactMethod
@@ -74,6 +76,7 @@ public class RNAmplitudeSDK extends ReactContextBaseJavaModule {
   @ReactMethod
   public void getDeviceId(Promise promise) {
     String deviceId = Amplitude.getInstance().getDeviceId();
+    Log.d("Amplitude", deviceId);
     promise.resolve(deviceId);
   }
 

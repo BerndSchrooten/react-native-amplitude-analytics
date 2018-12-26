@@ -15,17 +15,37 @@ var amplitudeHasInitialized = false;
 
 class Amplitude {
 
+  static initInstance(apiKey, options = {}) {
+    return new Promise((resolve, reject) => {
+      try {
+        new Amplitude(apiKey, options.trackSessionEvents, options.eventPrefix, (instance) => {
+          resolve(instance);
+        })
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  initializing = false;
+  evPrefix = null;
+
   /**
    * Creates a new Amplitude client
    */
-  constructor(apiKey, trackSessionEvents, eventPrefix) {
+  constructor(apiKey, trackSessionEvents, eventPrefix, onCreate) {
     if (apiKey && typeof apiKey === 'string') {
       if (RNAmplitudeSDK) {
         if (eventPrefix) {
           this.evPrefix = eventPrefix;
         }
-        RNAmplitudeSDK.initialize(apiKey, trackSessionEvents === true);
-        amplitudeHasInitialized = true;
+        this.initializing = true;
+        RNAmplitudeSDK.initialize(apiKey, trackSessionEvents === true).then(() => {
+          this.initializing = false;
+          amplitudeHasInitialized = true;
+          this.trackDeferredLogs();
+          onCreate(this);
+        });
       } else {
         throw new Error('RNAmplitudeSDK: No native client found. Is RNAmplitudeSDK installed in your native code project?');
       }
@@ -96,6 +116,7 @@ class Amplitude {
   // --------------------------------------------------
   // Track
   // --------------------------------------------------
+  deferredLogs = [];
 
   logEvent(name, properties) {
     if (amplitudeHasInitialized) {
@@ -105,6 +126,8 @@ class Amplitude {
       } else {
         return RNAmplitudeSDK.logEvent(eventName);
       }
+    } else if (this.initializing) {
+      this.deferredLogs.push({name, properties, timestamp: new Date().valueOf()})
     } else {
       throw new Error('You called Amplitude.logEvent before initializing it. Run new Amplitute(key) first.');
     }
@@ -114,11 +137,20 @@ class Amplitude {
     if (amplitudeHasInitialized) {
       var eventName = this.evPrefix ? this.evPrefix + name : name;
       return RNAmplitudeSDK.logEventWithTimestamp(eventName, timestamp, properties);
+    } else if (this.initializing) {
+      this.deferredLogs.push({name, properties, timestamp})
     } else {
       throw new Error(
         'You called Amplitude.logEvent before initializing it. Run new Amplitute(key) first.'
       );
     }
+  }
+
+  trackDeferredLogs() {
+    this.deferredLogs.forEach(({name, properties, timestamp}) => {
+      console.tron.debug('deferred');
+      this.logEventWithTimestamp(name, timestamp, properties)
+    })
   }
 
   // --------------------------------------------------

@@ -5,10 +5,11 @@
 RCT_EXPORT_MODULE()
 
 // initializes Amplitude
-RCT_EXPORT_METHOD(initialize:(NSString* )writeKey setTrackSessionEvents:(BOOL) trackSessionEvents)
+RCT_EXPORT_METHOD(initialize:(NSString* )writeKey setTrackSessionEvents:(BOOL) trackSessionEvents resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
      [Amplitude instance].trackingSessionEvents = trackSessionEvents;
      [[Amplitude instance] initializeApiKey: writeKey];
+     resolve(nil);
 }
 
 RCT_EXPORT_METHOD(setUserId:(NSString *)userId)

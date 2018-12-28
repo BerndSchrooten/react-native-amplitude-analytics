@@ -11,178 +11,176 @@ import { NativeModules, Platform } from 'react-native';
 
 // Native Modules
 const { RNAmplitudeSDK } = NativeModules;
-var amplitudeHasInitialized = false;
+let amplitudeHasInitialized = false;
+let initializing = false;
+let evPrefix = null;
 
-class Amplitude {
 
-  static initInstance(apiKey, options = {}) {
-    return new Promise((resolve, reject) => {
-      try {
-        new Amplitude(apiKey, options.trackSessionEvents, options.eventPrefix, (instance) => {
-          resolve(instance);
-        })
-      } catch (e) {
-        reject(e);
+/**
+ * Creates a new Amplitude client
+ */
+function construct(apiKey, trackSessionEvents, eventPrefix) {
+  if (apiKey && typeof apiKey === 'string') {
+    if (RNAmplitudeSDK) {
+      if (eventPrefix) {
+        evPrefix = eventPrefix;
       }
-    });
-  }
-
-  initializing = false;
-  evPrefix = null;
-
-  /**
-   * Creates a new Amplitude client
-   */
-  constructor(apiKey, trackSessionEvents, eventPrefix, onCreate) {
-    if (apiKey && typeof apiKey === 'string') {
-      if (RNAmplitudeSDK) {
-        if (eventPrefix) {
-          this.evPrefix = eventPrefix;
-        }
-        this.initializing = true;
-        RNAmplitudeSDK.initialize(apiKey, trackSessionEvents === true).then(() => {
-          this.initializing = false;
-          amplitudeHasInitialized = true;
-          this.trackDeferredLogs();
-          onCreate(this);
-        });
-      } else {
-        throw new Error('RNAmplitudeSDK: No native client found. Is RNAmplitudeSDK installed in your native code project?');
-      }
+      initializing = true;
+      RNAmplitudeSDK.initialize(apiKey, trackSessionEvents === true).then(() => {
+        initializing = false;
+        amplitudeHasInitialized = true;
+        trackDeferredLogs();
+      });
     } else {
-      throw new Error('RNAmplitudeSDK: A client must be constructed with an API key. i.e new Amplitude(key);');
+      throw new Error('RNAmplitudeSDK: No native client found. Is RNAmplitudeSDK installed in your native code project?');
     }
-  }
-
-  // --------------------------------------------------
-  // Identify
-  // --------------------------------------------------
-  setUserId(userId) {
-    if (amplitudeHasInitialized) {
-      return RNAmplitudeSDK.setUserId(userId ? userId.toString() : null);
-    } else {
-      throw new Error('You called Amplitude.setUserId before initializing it. Run new Amplitute(key) first.');
-    }
-  }
-
-  setUserProperties(properties) {
-    if (amplitudeHasInitialized) {
-      return RNAmplitudeSDK.setUserProperties(properties);
-    } else {
-      throw new Error('You called Amplitude.setUserProperties before initializing it. Run new Amplitute(key) first.');
-    }
-  }
-
-  setOptOut(optOut) {
-    if (amplitudeHasInitialized) {
-      return RNAmplitudeSDK.setOptOut(optOut);
-    } else {
-      throw new Error('You called Amplitude.setOptOut before initializing it. Run new Amplitute(key) first.');
-    }
-  }
-
-  clearUserProperties() {
-    if (amplitudeHasInitialized) {
-      return RNAmplitudeSDK.clearUserProperties();
-    } else {
-      throw new Error('You called Amplitude.clearUserProperties before initializing it. Run new Amplitute(key) first.');
-    }
-  }
-
-  getDeviceId() {
-    if (amplitudeHasInitialized) {
-      return RNAmplitudeSDK.getDeviceId();
-    } else {
-      throw new Error('You called Amplitude.getDeviceId before initializing it. Run new Amplitude(key) first.')
-    }
-  }
-
-  regenerateDeviceId() {
-    if (amplitudeHasInitialized) {
-      return RNAmplitudeSDK.regenerateDeviceId();
-    } else {
-      throw new Error('You called Amplitude.regenerateDeviceId before initializing it. Run new Amplitute(key) first.');
-    }
-  }
-
-  setLogEventPrefix(prefix) {
-    if (amplitudeHasInitialized) {
-      this.evPrefix = prefix;
-    } else {
-      throw new Error('You called Amplitude.setLogEventPrefix before initializing it. Run new Amplitute(key) first.');
-    }
-  }
-
-  // --------------------------------------------------
-  // Track
-  // --------------------------------------------------
-  deferredLogs = [];
-
-  logEvent(name, properties) {
-    if (amplitudeHasInitialized) {
-      var eventName = this.evPrefix ? this.evPrefix + name : name;
-      if (properties) {
-        return RNAmplitudeSDK.logEventWithProps(eventName, properties);
-      } else {
-        return RNAmplitudeSDK.logEvent(eventName);
-      }
-    } else if (this.initializing) {
-      this.deferredLogs.push({name, properties, timestamp: new Date().valueOf()})
-    } else {
-      throw new Error('You called Amplitude.logEvent before initializing it. Run new Amplitute(key) first.');
-    }
-  }
-
-  logEventWithTimestamp(name, timestamp, properties = {}) {
-    if (amplitudeHasInitialized) {
-      var eventName = this.evPrefix ? this.evPrefix + name : name;
-      return RNAmplitudeSDK.logEventWithTimestamp(eventName, timestamp, properties);
-    } else if (this.initializing) {
-      this.deferredLogs.push({name, properties, timestamp})
-    } else {
-      throw new Error(
-        'You called Amplitude.logEvent before initializing it. Run new Amplitute(key) first.'
-      );
-    }
-  }
-
-  trackDeferredLogs() {
-    this.deferredLogs.forEach(({name, properties, timestamp}) => {
-      console.tron.debug('deferred');
-      this.logEventWithTimestamp(name, timestamp, properties)
-    })
-  }
-
-  // --------------------------------------------------
-  // Revenue
-  // --------------------------------------------------
-  logRevenue(productIdentifier, quantity, amount, receipt) {
-    if (amplitudeHasInitialized) {
-      if (Platform.OS === 'ios') {
-        return RNAmplitudeSDK.logRevenue(productIdentifier, quantity, amount, receipt);
-      } else {
-        return RNAmplitudeSDK.logRevenue(productIdentifier, quantity, amount);
-      }
-    } else {
-      throw new Error('You called Amplitude.logRevenue before initializing it. Run new Amplitute(key) first.');
-    }
-  }
-
-  addToUserProperty(property, amount) {
-    if (amplitudeHasInitialized) {
-      return RNAmplitudeSDK.addToUserProperty(property, amount);
-    } else {
-      throw new Error('You called Amplitude.addToUserPropery before initializing it. Run new Amplitute(key) first.');
-    }
-  }
-
-  setUserPropertyOnce(property, value) {
-    if (amplitudeHasInitialized) {
-      return RNAmplitudeSDK.setUserPropertyOnce(property, value);
-    } else {
-      throw new Error('You called Amplitude.setUserPropertyOnce before initializing it. Run new Amplitute(key) first.');
-    }
+  } else {
+    throw new Error('RNAmplitudeSDK: A client must be constructed with an API key. i.e new Amplitude(key);');
   }
 }
 
-export default Amplitude;
+// --------------------------------------------------
+// Identify
+// --------------------------------------------------
+function setUserId(userId) {
+  if (amplitudeHasInitialized) {
+    return RNAmplitudeSDK.setUserId(userId ? userId.toString() : null);
+  } else {
+    throw new Error('You called Amplitude.setUserId before initializing it. Run new Amplitute(key) first.');
+  }
+}
+
+function setUserProperties(properties) {
+  if (amplitudeHasInitialized) {
+    return RNAmplitudeSDK.setUserProperties(properties);
+  } else {
+    throw new Error('You called Amplitude.setUserProperties before initializing it. Run new Amplitute(key) first.');
+  }
+}
+
+function setOptOut(optOut) {
+  if (amplitudeHasInitialized) {
+    return RNAmplitudeSDK.setOptOut(optOut);
+  } else {
+    throw new Error('You called Amplitude.setOptOut before initializing it. Run new Amplitute(key) first.');
+  }
+}
+
+function clearUserProperties() {
+  if (amplitudeHasInitialized) {
+    return RNAmplitudeSDK.clearUserProperties();
+  } else {
+    throw new Error('You called Amplitude.clearUserProperties before initializing it. Run new Amplitute(key) first.');
+  }
+}
+
+function getDeviceId() {
+  if (amplitudeHasInitialized) {
+    return RNAmplitudeSDK.getDeviceId();
+  } else {
+    throw new Error('You called Amplitude.getDeviceId before initializing it. Run new Amplitude(key) first.')
+  }
+}
+
+function regenerateDeviceId() {
+  if (amplitudeHasInitialized) {
+    return RNAmplitudeSDK.regenerateDeviceId();
+  } else {
+    throw new Error('You called Amplitude.regenerateDeviceId before initializing it. Run new Amplitute(key) first.');
+  }
+}
+
+function setLogEventPrefix(prefix) {
+  if (amplitudeHasInitialized) {
+    evPrefix = prefix;
+  } else {
+    throw new Error('You called Amplitude.setLogEventPrefix before initializing it. Run new Amplitute(key) first.');
+  }
+}
+
+// --------------------------------------------------
+// Track
+// --------------------------------------------------
+let deferredLogs = [];
+
+function logEvent(name, properties) {
+  if (amplitudeHasInitialized) {
+    var eventName = evPrefix ? evPrefix + name : name;
+    if (properties) {
+      return RNAmplitudeSDK.logEventWithProps(eventName, properties);
+    } else {
+      return RNAmplitudeSDK.logEvent(eventName);
+    }
+  } else if (initializing) {
+    deferredLogs.push({name, properties, timestamp: new Date().valueOf()})
+  } else {
+    throw new Error('You called Amplitude.logEvent before initializing it. Run new Amplitute(key) first.');
+  }
+}
+
+function logEventWithTimestamp(name, timestamp, properties = {}) {
+  if (amplitudeHasInitialized) {
+    var eventName = evPrefix ? evPrefix + name : name;
+    return RNAmplitudeSDK.logEventWithTimestamp(eventName, timestamp, properties);
+  } else if (initializing) {
+    deferredLogs.push({name, properties, timestamp})
+  } else {
+    throw new Error(
+      'You called Amplitude.logEvent before initializing it. Run new Amplitute(key) first.'
+    );
+  }
+}
+
+function trackDeferredLogs() {
+  deferredLogs.forEach(({name, properties, timestamp}) => {
+    console.tron.debug('deferred');
+    logEventWithTimestamp(name, timestamp, properties);
+  })
+  deferredLogs = [];
+}
+
+// --------------------------------------------------
+// Revenue
+// --------------------------------------------------
+function logRevenue(productIdentifier, quantity, amount, receipt) {
+  if (amplitudeHasInitialized) {
+    if (Platform.OS === 'ios') {
+      return RNAmplitudeSDK.logRevenue(productIdentifier, quantity, amount, receipt);
+    } else {
+      return RNAmplitudeSDK.logRevenue(productIdentifier, quantity, amount);
+    }
+  } else {
+    throw new Error('You called Amplitude.logRevenue before initializing it. Run new Amplitute(key) first.');
+  }
+}
+
+function addToUserProperty(property, amount) {
+  if (amplitudeHasInitialized) {
+    return RNAmplitudeSDK.addToUserProperty(property, amount);
+  } else {
+    throw new Error('You called Amplitude.addToUserPropery before initializing it. Run new Amplitute(key) first.');
+  }
+}
+
+function setUserPropertyOnce(property, value) {
+  if (amplitudeHasInitialized) {
+    return RNAmplitudeSDK.setUserPropertyOnce(property, value);
+  } else {
+    throw new Error('You called Amplitude.setUserPropertyOnce before initializing it. Run new Amplitute(key) first.');
+  }
+}
+
+export default {
+  construct,
+  setUserId,
+  setUserProperties,
+  setOptOut,
+  clearUserProperties,
+  getDeviceId,
+  regenerateDeviceId,
+  logEvent,
+  logEventWithTimestamp,
+  logRevenue,
+  addToUserProperty,
+  setUserPropertyOnce
+}

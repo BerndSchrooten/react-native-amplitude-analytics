@@ -26,7 +26,7 @@ function construct(apiKey, trackSessionEvents, eventPrefix) {
         evPrefix = eventPrefix;
       }
       initializing = true;
-      RNAmplitudeSDK.initialize(apiKey, trackSessionEvents === true).then(() => {
+      return RNAmplitudeSDK.initialize(apiKey, trackSessionEvents === true).then(() => {
         initializing = false;
         amplitudeHasInitialized = true;
         trackDeferredLogs();

@@ -4,7 +4,7 @@ interface AmplitudeOptions {
 }
 
 
-export function constructor(apiKey: string, trackSessionEvents?: boolean, eventPrefix?: string): Promise<void>;
+export function construct(apiKey: string, trackSessionEvents?: boolean, eventPrefix?: string): Promise<void>;
 
 // --------------------------------------------------
 // Identify

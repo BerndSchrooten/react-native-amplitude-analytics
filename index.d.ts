@@ -3,32 +3,31 @@ interface AmplitudeOptions {
   eventPrefix?: boolean;
 }
 
-export default class Amplitude {
-  static initInstance(apiKey: string, options?: AmplitudeOptions): Promise<Amplitude>;
-  constructor(apiKey: string, trackSessionEvents?: boolean, eventPrefix?: string, onCreate?: (instance: Amplitude) => void);
 
-  // --------------------------------------------------
-  // Identify
-  // --------------------------------------------------
-  setUserId(userId: string | number | null): void;
-  setUserProperties(properties: Record<string, any>): void;
-  setOptOut(optOut: boolean): void;
-  clearUserProperties(): void;
-  getDeviceId(): Promise<string>;
-  regenerateDeviceId(): void;
-  setLogEventPrefix(prefix: string): void;
+export function constructor(apiKey: string, trackSessionEvents?: boolean, eventPrefix?: string): Promise<void>;
 
-  // --------------------------------------------------
-  // Track
-  // --------------------------------------------------
+// --------------------------------------------------
+// Identify
+// --------------------------------------------------
+export function setUserId(userId: string | number | null): void;
+export function setUserProperties(properties: Record<string, any>): void;
+export function setOptOut(optOut: boolean): void;
+export function clearUserProperties(): void;
+export function getDeviceId(): Promise<string>;
+export function regenerateDeviceId(): void;
+export function setLogEventPrefix(prefix: string): void;
 
-  logEvent(name: string, properties?: Record<string, any>): void;
-  logEventWithTimestamp(name: string, timestamp: number, properties?: Record<string, any>): void;
+// --------------------------------------------------
+// Track
+// --------------------------------------------------
 
-  // --------------------------------------------------
-  // Revenue
-  // --------------------------------------------------
-  logRevenue(productIdentifier: string, quantity: number, amount: number, receipt?: string): void;
-  addToUserProperty(property: string, amount: number): void;
-  setUserPropertyOnce(property: string, value: string | number | null): void;
-}
+export function logEvent(name: string, properties?: Record<string, any>): void;
+export function logEventWithTimestamp(name: string, timestamp: number, properties?: Record<string, any>): void;
+
+// --------------------------------------------------
+// Revenue
+// --------------------------------------------------
+export function logRevenue(productIdentifier: string, quantity: number, amount: number, receipt?: string): void;
+export function addToUserProperty(property: string, amount: number): void;
+export function setUserPropertyOnce(property: string, value: string | number | null): void;
+
